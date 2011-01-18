@@ -1,0 +1,6 @@
+libkaztimer-dev (1.0.0) maverick; urgency=low
+
+  * debian/control:
+    - initial packaged version
+
+ -- Luke Benstead (Kazade) <kazade@gmail.com>  Tue, 18 Jan 2011 08:05:00 +1100

@@ -1,0 +1,14 @@
+Source: libkaztimer-dev
+Priority: optional
+Section: libs
+Maintainer: Luke Benstead (Kazade) <kazade@gmail.com>
+Build-Depends: dpkg (>= 1.13.2), debhelper (>= 4.0), cmake (>= 2), libboost-dev
+Standards-Version: 3.9.1
+
+Package: libkaztimer-dev
+Architecture: any
+Section: libdevel
+Description: Kaztimer, a game timer library written in C++ with a C API
+ .
+ This package contains the files needed to compile and link programs which
+ use Kaztimer.
