@@ -1,0 +1,14 @@
+------------------------------------------------------------
+revno: 2
+committer: Luke Benstead <kazade@gmail.com>
+branch nick: trunk
+timestamp: Tue 2011-01-18 08:08:14 +0000
+message:
+  Add debian directory
+------------------------------------------------------------
+revno: 1
+committer: Luke Benstead <kazade@gmail.com>
+branch nick: kaztimer
+timestamp: Mon 2011-01-17 20:06:01 +0000
+message:
+  Initial implementation
