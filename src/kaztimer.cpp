@@ -23,7 +23,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <ctime>
+#include <sys/time.h>
 #include <boost/shared_ptr.hpp>
 #include <map>
 #include "kaztimer.h"
@@ -98,9 +98,10 @@ public:
 #ifdef WIN32
         return timeGetTime();
 #else
-        timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        return (long) (ts.tv_sec * 1000.0) + ts.tv_nsec / 1000000.0;
+        struct timeval tv;
+        struct timezone tz;
+        gettimeofday(&tv, &tz);
+        return (long) (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 #endif
     }
 
