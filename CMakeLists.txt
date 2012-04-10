@@ -3,11 +3,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(kaztimer)
 
 SET(KAZTIMER_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/kaztimer.cpp
+    ${CMAKE_SOURCE_DIR}/kaztimer/kaztimer.cpp
 )
 
 SET(KAZTIMER_HEADERS
-    ${CMAKE_SOURCE_DIR}/src/kaztimer.h
+    ${CMAKE_SOURCE_DIR}/kaztimer/kaztimer.h
 )
 
 SET(CMAKE_C_FLAGS "-std=c99")
