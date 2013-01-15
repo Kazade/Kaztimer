@@ -32,6 +32,7 @@ class Timer {
 public:
     Timer():
         step_(-1),
+        is_fixed_(false),
         accumulator_(0.0f) {
 
         set_game_timer();
@@ -40,14 +41,14 @@ public:
     void set_fixed(int step) {
         step_ = step;
         is_fixed_ = true;
-        last_time_ = get_current_time_in_ms();
+        last_time_ = get_current_time_in_seconds();
         accumulator_ = 0.0f;
     }
 
     void set_game_timer() {
         step_ = -1;
         is_fixed_ = false;
-        last_time_ = get_current_time_in_ms();
+        last_time_ = get_current_time_in_seconds();
     }
     
     void update_frame_time() {
@@ -88,20 +89,21 @@ public:
     }
 
     double get_elapsed_time() {
-        long current_time = get_current_time_in_ms();
-        double elapsed = double(current_time - last_time_) * 0.001;
+        double current_time = get_current_time_in_seconds();
+        double elapsed = double(current_time - last_time_);
         last_time_ = current_time;
         return elapsed;
     }
 
-    long get_current_time_in_ms() {
+    double get_current_time_in_seconds() {
 #ifdef WIN32
         return timeGetTime();
 #else
-        struct timeval tv;
-        struct timezone tz;
-        gettimeofday(&tv, &tz);
-        return (long) (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+        struct timespec tv;
+        clock_gettime(CLOCK_REALTIME, &tv);
+
+        const double BILLION = 1000000000;
+        return double(tv.tv_sec) + (double(tv.tv_nsec) / BILLION);
 #endif
     }
 
@@ -109,38 +111,41 @@ private:
     int step_;
     bool is_fixed_;
 
-    long last_time_;
+    double last_time_;
     double accumulator_;
     double frame_time_;
 };
 
-static std::map<KTIuint, boost::shared_ptr<Timer> > timers_;
-
 static KTIuint bound_timer_id_ = 0;
 static KTIuint current_timer_id_ = 0;
+
+std::map<KTIuint, boost::shared_ptr<Timer> >& timers() {
+    static std::map<KTIuint, boost::shared_ptr<Timer> > timers_;
+    return timers_;
+}
 
 KTIuint get_next_timer_id() {
     return ++current_timer_id_;
 }
 
 Timer* get_bound_timer() {
-    if(timers_.find(bound_timer_id_) == timers_.end()) {
+    if(timers().find(bound_timer_id_) == timers().end()) {
         return NULL;
     }
 
-    return timers_[bound_timer_id_].get();
+    return timers()[bound_timer_id_].get();
 }
 
 void ktiGenTimers(KTIsizei n, KTIuint* names) {
     for(KTIuint i = 0; i < n; ++i) {
         KTIuint new_id = get_next_timer_id();
-        timers_[new_id].reset(new Timer());
+        timers()[new_id].reset(new Timer());
         names[i] = new_id;
     }
 }
 
 void ktiBindTimer(KTIuint name) {
-    if(timers_.find(name) == timers_.end()) {
+    if(timers().find(name) == timers().end()) {
         bound_timer_id_ = 0;
     }
 
@@ -194,6 +199,6 @@ KTIdouble ktiGetDeltaTime() {
 
 void ktiDeleteTimers(KTIsizei n, const KTIuint* names) {
     for(KTIuint i = 0; i < n; ++i) {
-        timers_.erase(names[i]);
+        timers().erase(names[i]);
     }
 }
