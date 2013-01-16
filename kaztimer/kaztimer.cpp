@@ -24,7 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <sys/time.h>
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 #include <map>
 #include "kaztimer.h"
 
@@ -119,8 +119,8 @@ private:
 static KTIuint bound_timer_id_ = 0;
 static KTIuint current_timer_id_ = 0;
 
-std::map<KTIuint, boost::shared_ptr<Timer> >& timers() {
-    static std::map<KTIuint, boost::shared_ptr<Timer> > timers_;
+std::map<KTIuint, std::tr1::shared_ptr<Timer> >& timers() {
+    static std::map<KTIuint, std::tr1::shared_ptr<Timer> > timers_;
     return timers_;
 }
 
