@@ -10,7 +10,7 @@ SET(KAZTIMER_HEADERS
     ${CMAKE_SOURCE_DIR}/kaztimer/kaztimer.h
 )
 
-SET(CMAKE_C_FLAGS "-std=c99")
+SET(CMAKE_CXX_FLAGS "-std=c++11")
 LINK_LIBRARIES(
     -lrt
 )

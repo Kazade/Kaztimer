@@ -23,7 +23,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <sys/time.h>
+#include <cstdint>
+#include <chrono>
 #include <tr1/memory>
 #include <map>
 #include "kaztimer.h"
@@ -41,14 +42,14 @@ public:
     void set_fixed(int step) {
         step_ = step;
         is_fixed_ = true;
-        last_time_ = get_current_time_in_seconds();
+        last_time_ = get_current_time_in_nanoseconds();
         accumulator_ = 0.0f;
     }
 
     void set_game_timer() {
         step_ = -1;
         is_fixed_ = false;
-        last_time_ = get_current_time_in_seconds();
+        last_time_ = get_current_time_in_nanoseconds();
     }
     
     void update_frame_time() {
@@ -89,31 +90,33 @@ public:
     }
 
     double get_elapsed_time() {
-        double current_time = get_current_time_in_seconds();
-        double elapsed = double(current_time - last_time_);
+        uint64_t current_time = get_current_time_in_nanoseconds();
+	uint64_t elapsed = current_time - last_time_;
+
         last_time_ = current_time;
-        return elapsed;
+        return nanoseconds_to_seconds(elapsed);
     }
 
-    double get_current_time_in_seconds() {
-#ifdef WIN32
-        return timeGetTime();
-#else
-        struct timespec tv;
-        clock_gettime(CLOCK_REALTIME, &tv);
-
-        const double BILLION = 1000000000;
-        return double(tv.tv_sec) + (double(tv.tv_nsec) / BILLION);
-#endif
+    uint64_t get_current_time_in_nanoseconds() {
+	using std::chrono::nanoseconds;
+	using std::chrono::duration_cast;
+	typedef std::chrono::high_resolution_clock Clock;
+	nanoseconds ns = duration_cast<nanoseconds>(Clock::now().time_since_epoch());
+	return ns.count();
     }
 
 private:
     int step_;
     bool is_fixed_;
 
-    double last_time_;
+    uint64_t last_time_;
     double accumulator_;
     double frame_time_;
+
+    double nanoseconds_to_seconds(uint64_t nano) const {
+        const double BILLION = 1000000000;
+	return double(nano) / BILLION;
+    }
 };
 
 static KTIuint bound_timer_id_ = 0;
