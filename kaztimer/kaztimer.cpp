@@ -91,18 +91,19 @@ public:
 
     double get_elapsed_time() {
         uint64_t current_time = get_current_time_in_nanoseconds();
-	uint64_t elapsed = current_time - last_time_;
+        uint64_t elapsed = current_time - last_time_;
 
         last_time_ = current_time;
         return nanoseconds_to_seconds(elapsed);
     }
 
     uint64_t get_current_time_in_nanoseconds() {
-	using std::chrono::nanoseconds;
-	using std::chrono::duration_cast;
-	typedef std::chrono::high_resolution_clock Clock;
-	nanoseconds ns = duration_cast<nanoseconds>(Clock::now().time_since_epoch());
-	return ns.count();
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        
+        const uint64_t NANO_SECONDS_IN_SEC = 1000000000;
+        
+        return (ts.tv_sec * NANO_SECONDS_IN_SEC) + ts.tv_nsec;
     }
 
 private:
@@ -114,8 +115,8 @@ private:
     double frame_time_;
 
     double nanoseconds_to_seconds(uint64_t nano) const {
-        const double BILLION = 1000000000;
-	return double(nano) / BILLION;
+        const double BILLION = 1.0 / 1000000000.0;
+        return double(nano) * BILLION;
     }
 };
 
