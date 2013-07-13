@@ -106,6 +106,7 @@ public:
         return (ts.tv_sec * NANO_SECONDS_IN_SEC) + ts.tv_nsec;
     }
 
+    double get_accumulator() const { return accumulator_; }
 private:
     int step_;
     bool is_fixed_;
@@ -190,6 +191,14 @@ void ktiUpdateFrameTime() {
     }    
     
     timer->update_frame_time();
+}
+
+KTIdouble ktiGetAccumulatorValue() {
+    Timer* timer = get_bound_timer();
+    if(!timer) {
+        return 0.0;
+    }
+    return timer->get_accumulator();
 }
 
 KTIdouble ktiGetDeltaTime() {
