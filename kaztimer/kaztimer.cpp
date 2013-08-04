@@ -29,6 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include "kaztimer.h"
 
+#ifdef _WIN32
+    #include "kaztimer_win.h"
+#endif
+
 class Timer {
 public:
     Timer():
@@ -51,29 +55,29 @@ public:
         is_fixed_ = false;
         last_time_ = get_current_time_in_nanoseconds();
     }
-    
+
     void update_frame_time() {
         frame_time_ = get_elapsed_time();
         if(frame_time_ > 0.25) {
             frame_time_ = 0.25;
-        }        
-        
+        }
+
         if(is_fixed_) {
             accumulator_ += frame_time_;
-        }         
+        }
     }
 
     bool can_update() {
-        if(!is_fixed_) {            
+        if(!is_fixed_) {
             return true;
         }
-        
+
         double fixed_step = get_fixed_step();
         if(accumulator_ >= fixed_step) {
             accumulator_ -= fixed_step;
             return true;
         }
-        
+
         return false;
     }
 
@@ -81,8 +85,8 @@ public:
         return 1.0 / double(step_);
     }
 
-    double get_delta_time() {                    
-        if(is_fixed_) {                                    
+    double get_delta_time() {
+        if(is_fixed_) {
             return get_fixed_step();
         }
 
@@ -100,9 +104,9 @@ public:
     uint64_t get_current_time_in_nanoseconds() {
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC, &ts);
-        
+
         const uint64_t NANO_SECONDS_IN_SEC = 1000000000;
-        
+
         return (ts.tv_sec * NANO_SECONDS_IN_SEC) + ts.tv_nsec;
     }
 
@@ -188,8 +192,8 @@ void ktiUpdateFrameTime() {
     Timer* timer = get_bound_timer();
     if(!timer) {
         return;
-    }    
-    
+    }
+
     timer->update_frame_time();
 }
 

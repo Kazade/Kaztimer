@@ -23,50 +23,37 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef KAZTIMER_H_INCLUDED
-#define KAZTIMER_H_INCLUDED
+#ifndef KAZTIMER_WIN_H
+#define KAZTIMER_WIN_H
+
+#include <ctime>
+
+// From <sys/timeb.h>
+#ifndef _TIMESPEC_DEFINED
+#define _TIMESPEC_DEFINED
+struct timespec {
+  time_t  tv_sec;   /* Seconds */
+  long    tv_nsec;  /* Nanoseconds */
+};
+
+struct itimerspec {
+  struct timespec  it_interval;  /* Timer period */
+  struct timespec  it_value;     /* Timer expiration */
+};
+#endif
+
+// Define dummy CLOCK_MONOTONIC for WIN32
+#define CLOCK_MONOTONIC 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef unsigned int KTIsizei;
-typedef unsigned int KTIuint;
-typedef int KTIint;
-typedef double KTIdouble;
-typedef unsigned char KTIbool;
 
-void ktiGenTimers(KTIsizei n, KTIuint* names);
-void ktiBindTimer(KTIuint name);
-void ktiStartFixedStepTimer(KTIint steps_per_second);
-void ktiStartGameTimer();
-void ktiUpdateFrameTime();
-KTIbool ktiTimerCanUpdate();
-KTIdouble ktiGetDeltaTime();
-KTIdouble ktiGetAccumulatorValue();
-void ktiDeleteTimers(KTIsizei n, const KTIuint* names);
+int clock_gettime(int x, struct timespec *ts);
 
 #ifdef __cplusplus
 }
 #endif
 
-/**
-    USAGE:
-        KTIuint timers[2];
-        ktiGenTimers(2, timers);
-
-        ktiBindTimer(timers[0]);
-        ktiStartFixedStepTimer(30);
-
-        while(ktiTimerCanUpdate()) {
-            KSfloat dt = ktiGetDeltaTime(); //Will always return a fixed value
-            //Do fixed step stuff (e.g. physics)
-        }
-
-        ktiStartGameTimer();
-
-        KSfloat deltatime = ktiGetDeltaTime(); //Variable return value
-        //ktiTimerCanUpdate() will always return true
-        //Update based on elapsed time
-*/
-#endif // KAZTIMER_H_INCLUDED
+#endif
