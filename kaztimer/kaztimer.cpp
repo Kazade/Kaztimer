@@ -23,10 +23,94 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <sys/time.h>
+#include <cstdint>
+#include <chrono>
 #include <tr1/memory>
 #include <map>
 #include "kaztimer.h"
+
+#ifdef _WIN32
+
+#include <windows.h>
+
+// From <sys/timeb.h>
+#ifndef _TIMESPEC_DEFINED
+#define _TIMESPEC_DEFINED
+struct timespec {
+  time_t  tv_sec;   /* Seconds */
+  long    tv_nsec;  /* Nanoseconds */
+};
+
+struct itimerspec {
+  struct timespec  it_interval;  /* Timer period */
+  struct timespec  it_value;     /* Timer expiration */
+};
+#endif
+
+// Define dummy CLOCK_MONOTONIC for WIN32
+#define CLOCK_MONOTONIC 1
+#define BILLION 1000000000L
+
+struct timespec start_time;
+struct timespec stop_time;
+
+LARGE_INTEGER getFILETIMEoffset() {
+    SYSTEMTIME s;
+    FILETIME f;
+    LARGE_INTEGER t;
+
+    s.wYear = 1970;
+    s.wMonth = 1;
+    s.wDay = 1;
+    s.wHour = 0;
+    s.wMinute = 0;
+    s.wSecond = 0;
+    s.wMilliseconds = 0;
+    SystemTimeToFileTime(&s, &f);
+    t.QuadPart = f.dwHighDateTime;
+    t.QuadPart <<= 32;
+    t.QuadPart |= f.dwLowDateTime;
+    return (t);
+}
+
+int clock_gettime(int X, struct timespec *ts) {
+    LARGE_INTEGER           t;
+    FILETIME            f;
+    double                  microseconds;
+    static LARGE_INTEGER    offset;
+    static double           frequencyToMicroseconds;
+    static int              initialized = 0;
+    static BOOL             usePerformanceCounter = 0;
+
+    if (!initialized) {
+        LARGE_INTEGER performanceFrequency;
+        initialized = 1;
+        usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
+        if (usePerformanceCounter) {
+            QueryPerformanceCounter(&offset);
+            frequencyToMicroseconds = (double)performanceFrequency.QuadPart / 1000000.;
+        } else {
+            offset = getFILETIMEoffset();
+            frequencyToMicroseconds = 10.;
+        }
+    }
+    if (usePerformanceCounter) QueryPerformanceCounter(&t);
+    else {
+        GetSystemTimeAsFileTime(&f);
+        t.QuadPart = f.dwHighDateTime;
+        t.QuadPart <<= 32;
+        t.QuadPart |= f.dwLowDateTime;
+    }
+
+    t.QuadPart -= offset.QuadPart;
+    microseconds = (double)t.QuadPart / frequencyToMicroseconds;
+    t.QuadPart = microseconds;
+    ts->tv_sec = t.QuadPart / 1000000;
+    ts->tv_nsec = t.QuadPart % 1000000;
+    return (0);
+}
+
+#endif
 
 class Timer {
 public:
@@ -41,38 +125,38 @@ public:
     void set_fixed(int step) {
         step_ = step;
         is_fixed_ = true;
-        last_time_ = get_current_time_in_seconds();
+        last_time_ = get_current_time_in_nanoseconds();
         accumulator_ = 0.0f;
     }
 
     void set_game_timer() {
         step_ = -1;
         is_fixed_ = false;
-        last_time_ = get_current_time_in_seconds();
+        last_time_ = get_current_time_in_nanoseconds();
     }
-    
+
     void update_frame_time() {
         frame_time_ = get_elapsed_time();
         if(frame_time_ > 0.25) {
             frame_time_ = 0.25;
-        }        
-        
+        }
+
         if(is_fixed_) {
             accumulator_ += frame_time_;
-        }         
+        }
     }
 
     bool can_update() {
-        if(!is_fixed_) {            
+        if(!is_fixed_) {
             return true;
         }
-        
+
         double fixed_step = get_fixed_step();
         if(accumulator_ >= fixed_step) {
             accumulator_ -= fixed_step;
             return true;
         }
-        
+
         return false;
     }
 
@@ -80,8 +164,8 @@ public:
         return 1.0 / double(step_);
     }
 
-    double get_delta_time() {                    
-        if(is_fixed_) {                                    
+    double get_delta_time() {
+        if(is_fixed_) {
             return get_fixed_step();
         }
 
@@ -89,31 +173,35 @@ public:
     }
 
     double get_elapsed_time() {
-        double current_time = get_current_time_in_seconds();
-        double elapsed = double(current_time - last_time_);
+        uint64_t current_time = get_current_time_in_nanoseconds();
+        uint64_t elapsed = current_time - last_time_;
+
         last_time_ = current_time;
-        return elapsed;
+        return nanoseconds_to_seconds(elapsed);
     }
 
-    double get_current_time_in_seconds() {
-#ifdef WIN32
-        return timeGetTime();
-#else
-        struct timespec tv;
-        clock_gettime(CLOCK_REALTIME, &tv);
+    uint64_t get_current_time_in_nanoseconds() {
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
 
-        const double BILLION = 1000000000;
-        return double(tv.tv_sec) + (double(tv.tv_nsec) / BILLION);
-#endif
+        const uint64_t NANO_SECONDS_IN_SEC = 1000000000;
+
+        return (ts.tv_sec * NANO_SECONDS_IN_SEC) + ts.tv_nsec;
     }
 
+    double get_accumulator() const { return accumulator_; }
 private:
     int step_;
     bool is_fixed_;
 
-    double last_time_;
+    uint64_t last_time_;
     double accumulator_;
     double frame_time_;
+
+    double nanoseconds_to_seconds(uint64_t nano) const {
+        const double BILLION = 1.0 / 1000000000.0;
+        return double(nano) * BILLION;
+    }
 };
 
 static KTIuint bound_timer_id_ = 0;
@@ -183,9 +271,17 @@ void ktiUpdateFrameTime() {
     Timer* timer = get_bound_timer();
     if(!timer) {
         return;
-    }    
-    
+    }
+
     timer->update_frame_time();
+}
+
+KTIdouble ktiGetAccumulatorValue() {
+    Timer* timer = get_bound_timer();
+    if(!timer) {
+        return 0.0;
+    }
+    return timer->get_accumulator();
 }
 
 KTIdouble ktiGetDeltaTime() {

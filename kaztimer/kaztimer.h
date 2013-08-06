@@ -43,6 +43,7 @@ void ktiStartGameTimer();
 void ktiUpdateFrameTime();
 KTIbool ktiTimerCanUpdate();
 KTIdouble ktiGetDeltaTime();
+KTIdouble ktiGetAccumulatorValue();
 void ktiDeleteTimers(KTIsizei n, const KTIuint* names);
 
 #ifdef __cplusplus

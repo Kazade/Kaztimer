@@ -10,10 +10,14 @@ SET(KAZTIMER_HEADERS
     ${CMAKE_SOURCE_DIR}/kaztimer/kaztimer.h
 )
 
-SET(CMAKE_C_FLAGS "-std=c99")
-LINK_LIBRARIES(
-    -lrt
-)
+IF(WIN32)
+ELSE(WIN32)
+    LINK_LIBRARIES(
+        -lrt
+    )
+ENDIF(WIN32)
+
+SET(CMAKE_CXX_FLAGS "-std=c++11")
 
 ADD_LIBRARY(kaztimer SHARED ${KAZTIMER_SOURCES})
 SET_TARGET_PROPERTIES(kaztimer
